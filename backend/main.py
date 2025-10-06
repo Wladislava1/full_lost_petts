@@ -3,6 +3,7 @@ from backend.routes import announcements, auth, user
 from backend.database import engine, Base, get_db
 from backend import models
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 app = FastAPI()
 
@@ -13,8 +14,12 @@ def read_root():
     return {"message": "Главная страница"}
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 @app.get("/ads")
 def get_ads(db: Session = Depends(get_db)):
