@@ -25,3 +25,8 @@ def get_ads(db: Session = Depends(get_db)):
 app.include_router(announcements.router)
 app.include_router(auth.router)
 app.include_router(user.router)
+
+# вынести классы отдельно
+# ручки в один файл - main освободить
+# execute тоже отедельно
+# секретные данные - не пушить так
