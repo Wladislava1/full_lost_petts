@@ -1,32 +1,45 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
+from backend.database import engine, Base
 from backend.routes import announcements, auth, user
-from backend.database import engine, Base, get_db
-from backend import models
-from sqlalchemy.orm import Session
-from backend.core.utils import check_db_connection
+from fastapi.openapi.utils import get_openapi
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-@app.get("/")
-def read_root():
-    return {"message": "Главная страница"}
-
-@app.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    return check_db_connection(db)
-
-@app.get("/ads")
-def get_ads(db: Session = Depends(get_db)):
-    ads = db.query(models.Ad).all()
-    return ads
-
 app.include_router(announcements.router)
 app.include_router(auth.router)
 app.include_router(user.router)
 
-# вынести классы отдельно
-# ручки в один файл - main освободить
-# execute тоже отедельно
-# секретные данные - не пушить так
+@app.get("/")
+def read_root():
+    return {"message": "Главная страница"}
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="Ad Service API",
+        version="1.0.0",
+        description="API для объявлений",
+        routes=app.routes,
+    )
+    
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if method in ["get", "post", "put", "delete"]:
+                openapi_schema["paths"][path][method]["security"] = [{"OAuth2PasswordBearer": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi

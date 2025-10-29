@@ -1,28 +1,36 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends,File, UploadFile
+import shutil
+import uuid
+import os
+from sqlalchemy.orm import Session
+from backend.database import get_db
+from backend.schemas.ad import AdCreate, AdResponse
+from backend.auth import get_current_user  
+from backend.crud.ad import get_ads, get_ad, create_ad
 
 router = APIRouter(prefix="/announcements", tags=["Announcements"])
+UPLOAD_DIR = "media"
 
-class Announcement(BaseModel):
-    type: str
-    title: str
-    city: str
-    description: str
+@router.get("/", response_model=list[AdResponse])
+def list_ads(db: Session = Depends(get_db)):
+    return get_ads(db)
 
-@router.get("/")
-def get_announcements():
-    return [
-        {"id": 1, "type": "Пропажа", "title": "Кошка", "city": "Москва"},
-        {"id": 2, "type": "Находка", "title": "Пёс", "city": "Санкт-Петербург"},
-    ]
+@router.get("/{ad_id}", response_model=AdResponse)
+def get_ad_by_id(ad_id: int, db: Session = Depends(get_db)):
+    return get_ad(db, ad_id)
 
-@router.get("/{announcement_id}")
-def get_announcement(announcement_id: int):
-    return {"id": announcement_id, "title": "Кошка", "description": "Белая, с серыми пятнами"}
+@router.post("/", response_model=AdResponse)
+def create_new_ad(ad: AdCreate, 
+                  db: Session = Depends(get_db),
+                  user = Depends(get_current_user)):
+    return create_ad(db, ad, user.id)
 
-@router.post("/")
-def create_announcement(ad: Announcement):
-    return {
-        "message": "Объявление создано",
-        "data": ad
-    }
+@router.post("/upload")
+def upload_image(file: UploadFile = File(...), user = Depends(get_current_user)):
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
+    filename = f"{uuid.uuid4()}_{file.filename}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": filename, "uploaded_by": user.name}
