@@ -3,7 +3,7 @@ from backend.database import get_db
 from backend.auth import get_current_user
 from backend.crud.ad import get_user_ads, update_ad, delete_ad
 from backend.schemas.ad import AdResponse, AdUpdate
-from backend.schemas.user import UserProfile
+from backend.schemas.user import UserProfile, UserUpdate
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/user", tags=["User"])
@@ -12,7 +12,33 @@ router = APIRouter(prefix="/user", tags=["User"])
 def get_profile(user = Depends(get_current_user)):
     return UserProfile(
         name=user.name,
-        email=user.email
+        email=user.email,
+        city=user.city or "",
+        contacts=user.contacts or []
+    )
+
+@router.put("/profile", response_model=UserProfile)
+def update_profile(
+    data: UserUpdate,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    if data.name is not None:
+        user.name = data.name
+    if data.city is not None:
+        user.city = data.city if data.city.strip() else None
+    if data.contacts is not None:
+        cleaned = [c.strip() for c in data.contacts if c.strip()]
+        user.contacts = cleaned if cleaned else None
+
+    db.commit()
+    db.refresh(user)
+
+    return UserProfile(
+        name=user.name,
+        email=user.email,
+        city=user.city or "",
+        contacts=user.contacts or []
     )
 
 @router.get("/my_ads", response_model=list[AdResponse])

@@ -10,6 +10,8 @@ class User(Base):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    city = Column(String, nullable=True, default=None)
+    contacts = Column(JSON, nullable=True, default=None)
 
     ads = relationship("Ad", back_populates="owner")
 

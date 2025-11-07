@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
@@ -22,12 +22,53 @@ const CreateAnnouncementPage = () => {
   ]);
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState('');
 
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const contactTypes = ['Телефон', 'Телеграм', 'ВКонтакте', 'WhatsApp', 'Email'];
+
+  // Загружаем профиль пользователя при монтировании компонента
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const profile = await apiService.getProfile();
+      console.log('User profile loaded:', profile);
+      
+      // Предзаполняем город если он есть в профиле
+      if (profile.city && profile.city.trim() !== '') {
+        setCity(profile.city);
+      }
+      
+      // Предзаполняем контакты если они есть в профиле
+      if (profile.contacts && profile.contacts.length > 0) {
+        const profileContacts = profile.contacts
+          .filter(contact => contact.trim() !== '')
+          .map((contact, index) => ({
+            type: 'Телефон', // По умолчанию телефон, пользователь может изменить
+            value: contact,
+            is_primary: index === 0 // Первый контакт делаем основным
+          }));
+        
+        if (profileContacts.length > 0) {
+          setContacts(profileContacts);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      // Не показываем ошибку пользователю, просто оставляем поля пустыми
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const handleAddContact = () => {
     if (contacts.length < 3) {
@@ -115,6 +156,14 @@ const CreateAnnouncementPage = () => {
     );
   }
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Загрузка...</div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-cover bg-center relative flex items-center justify-center p-4"
@@ -165,14 +214,22 @@ const CreateAnnouncementPage = () => {
             required
           />
 
-          <input 
-            type="text" 
-            placeholder="Город" 
-            className="w-full border p-2 rounded"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            required
-          />
+          <div>
+            <label className="font-medium block mb-1">Город:</label>
+            <input 
+              type="text" 
+              placeholder="Введите город"
+              className="w-full border p-2 rounded"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              required
+            />
+            {city && (
+              <p className="text-sm text-gray-500 mt-1">
+                Город предзаполнен из вашего профиля
+              </p>
+            )}
+          </div>
 
           <textarea
             placeholder="Описание"
@@ -183,7 +240,14 @@ const CreateAnnouncementPage = () => {
           ></textarea>
 
           <div>
-            <label className="font-medium block mb-2">Контакты:</label>
+            <label className="font-medium block mb-2">
+              Контакты:
+              {contacts.some(contact => contact.value.trim() !== '') && (
+                <span className="text-sm text-gray-500 ml-2">
+                  (предзаполнены из профиля)
+                </span>
+              )}
+            </label>
             {contacts.map((contact, index) => (
               <div key={index} className="flex gap-2 mb-2">
                 <select

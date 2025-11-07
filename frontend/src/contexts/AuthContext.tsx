@@ -30,10 +30,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await apiService.login(email, password);
-    localStorage.setItem('access_token', response.access_token);
-    const userData = await apiService.getProfile();
-    setUser(userData);
+    try {
+      console.log('Starting login process...');
+      
+      const loginData = await apiService.login(email, password);
+      console.log('Login response:', loginData);
+      
+      if (loginData.access_token) {
+        localStorage.setItem('access_token', loginData.access_token);
+        console.log('Token saved, fetching profile...');
+        
+        const userProfile = await apiService.getProfile();
+        console.log('User profile from API:', userProfile);
+        
+        const userData = {
+          id: 0,
+          name: userProfile.name,
+          email: userProfile.email,
+          city: userProfile.city || '',
+          contacts: userProfile.contacts || []
+        };
+        
+        console.log('Processed user data:', userData);
+        setUser(userData);
+        console.log('Login successful');
+      }
+    } catch (error: unknown) {
+      console.error('Login error:', error);
+      localStorage.removeItem('access_token');
+      throw error;
+    }
   };
 
   const register = async (name: string, email: string, password: string, passwordRepeat: string) => {

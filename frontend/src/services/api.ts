@@ -117,8 +117,25 @@ class ApiService {
     return response.json();
   }
 
-  async getProfile() {
+ async getProfile(): Promise<{
+    name: string;
+    email: string;
+    city: string;
+    contacts: string[];
+  }> {
+
     return this.request('/user/profile');
+  }
+
+  async updateProfile(data: {
+    name?: string;
+    city?: string;
+    contacts?: string[];
+  }) {
+    return this.request('/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   async getUserAnnouncements() {

@@ -6,11 +6,11 @@ import { apiService } from "../services/api";
 import bg2 from '../assets/bg2.jpg';
 
 interface UserSettings {
+  id?: number;
   name: string;
   email: string;
   contacts: string[];
   city: string;
-  avatar?: string;
 }
 
 const SettingsPage = () => {
@@ -19,7 +19,6 @@ const SettingsPage = () => {
     email: "",
     contacts: [""],
     city: "",
-    avatar: "",
   });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,12 +35,13 @@ const SettingsPage = () => {
   const loadUserProfile = async () => {
     try {
       const profile = await apiService.getProfile();
+      console.log('Profile data:', profile);
+      
       setUser({
-        name: profile.name,
-        email: profile.email,
-        contacts: [""],
-        city: "",
-        avatar: ""
+        name: profile.name || "",
+        email: profile.email || "",
+        city: profile.city || "",
+        contacts: profile.contacts && profile.contacts.length > 0 ? profile.contacts : [""],
       });
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -49,7 +49,7 @@ const SettingsPage = () => {
   };
 
   const handleChange = (field: keyof UserSettings, value: string | string[]) => {
-    setUser({ ...user, [field]: value });
+    setUser(prev => ({ ...prev, [field]: value }));
   };
 
   const handleContactChange = (index: number, value: string) => {
@@ -67,12 +67,17 @@ const SettingsPage = () => {
   const removeContactField = (index: number) => {
     const updatedContacts = [...user.contacts];
     updatedContacts.splice(index, 1);
-    handleChange("contacts", updatedContacts);
+    handleChange("contacts", updatedContacts.length > 0 ? updatedContacts : [""]);
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
+      await apiService.updateProfile({
+        name: user.name,
+        city: user.city.trim() === "" ? undefined : user.city,
+        contacts: user.contacts.filter(c => c.trim() !== ''),
+      });
       alert("Настройки сохранены!");
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -116,7 +121,7 @@ const SettingsPage = () => {
           {showUserMenu && (
             <div className="absolute mt-2 right-0 md:left-0 bg-white rounded shadow-md w-48 z-50 overflow-hidden">
               <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
-                {user.name}
+                {user.name || authUser.name}
               </Link>
               <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">
                 Настройки
@@ -160,6 +165,7 @@ const SettingsPage = () => {
             className="w-full border p-2 rounded"
             disabled
           />
+          <p className="text-sm text-gray-500 mt-1">Email нельзя изменить</p>
         </div>
 
         <div className="mb-4">
@@ -169,33 +175,37 @@ const SettingsPage = () => {
             value={user.city}
             onChange={(e) => handleChange("city", e.target.value)}
             className="w-full border p-2 rounded"
+            placeholder="Введите ваш город"
           />
         </div>
 
         <div className="mb-4">
           <label className="block mb-1">Контакты</label>
           {user.contacts.map((contact, index) => (
-            <div key={index} className="flex gap-2 mb-1">
+            <div key={index} className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={contact}
                 onChange={(e) => handleContactChange(index, e.target.value)}
                 className="border p-2 rounded flex-1"
+                placeholder="Телефон, email или ссылка"
               />
-              <button
-                className="bg-red-500 text-white px-2 rounded hover:bg-red-600"
-                onClick={() => removeContactField(index)}
-              >
-                ✖
-              </button>
+              {user.contacts.length > 1 && (
+                <button
+                  className="bg-red-500 text-white px-3 rounded hover:bg-red-600"
+                  onClick={() => removeContactField(index)}
+                >
+                  ✖
+                </button>
+              )}
             </div>
           ))}
           {user.contacts.length < 3 && (
             <button
-              className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
               onClick={addContactField}
             >
-              Добавить контакт
+              + Добавить контакт
             </button>
           )}
         </div>

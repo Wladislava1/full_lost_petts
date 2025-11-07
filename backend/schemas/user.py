@@ -17,11 +17,18 @@ class UserResponse(BaseModel):
 class UserProfile(BaseModel):
     name: str
     email: str
+    city: str | None = None
+    contacts: list[str] = []
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    city: str | None = None
+    contacts: list[str] | None = None
 
 class Token(BaseModel):
     access_token: str
     token_type: str
-    
+
 class RegisterResponse(BaseModel):
     user: UserResponse
     access_token: str
