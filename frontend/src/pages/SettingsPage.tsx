@@ -1,36 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaUserCircle } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { apiService } from "../services/api";
 import bg2 from '../assets/bg2.jpg';
 
 interface UserSettings {
   name: string;
+  email: string;
   contacts: string[];
   city: string;
-  avatar?: string; 
+  avatar?: string;
 }
 
 const SettingsPage = () => {
   const [user, setUser] = useState<UserSettings>({
-    name: "Владислава",
-    contacts: ["example@mail.com", "123456789"],
-    city: "Москва",
+    name: "",
+    email: "",
+    contacts: [""],
+    city: "",
     avatar: "",
   });
-
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { user: authUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authUser) {
+      loadUserProfile();
+    }
+  }, [authUser]);
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await apiService.getProfile();
+      setUser({
+        name: profile.name,
+        email: profile.email,
+        contacts: [""],
+        city: "",
+        avatar: ""
+      });
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   const handleChange = (field: keyof UserSettings, value: string | string[]) => {
     setUser({ ...user, [field]: value });
-  };
-
-  const handleAvatarChange = (file: File) => {
-    const url = URL.createObjectURL(file);
-    setUser({ ...user, avatar: url });
-  };
-
-  const handleRemoveAvatar = () => {
-    setUser({ ...user, avatar: "" });
   };
 
   const handleContactChange = (index: number, value: string) => {
@@ -51,6 +70,32 @@ const SettingsPage = () => {
     handleChange("contacts", updatedContacts);
   };
 
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      alert("Настройки сохранены!");
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert("Ошибка при сохранении настроек");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Необходимо авторизоваться</div>
+        <Link to="/login" className="ml-4 text-blue-500">Войти</Link>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-gray-100">
       <img
@@ -61,72 +106,40 @@ const SettingsPage = () => {
       <div className="absolute inset-0 bg-black opacity-50"></div>
 
       <div className="sticky top-0 z-30 bg-black bg-opacity-20 p-4 flex justify-between items-center shadow">
-       <div className="relative inline-block">
-            <button
-              className="text-white text-4xl rounded-full"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <FaUserCircle />
-            </button>
-            {showUserMenu && (
-              <div className="absolute mt-2 right-0 md:left-0 bg-white rounded shadow-md w-48 z-50 overflow-hidden">
-                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
-                  Владислава
-                </Link>
-                <Link
-                  to="/settings"
-                  className="block px-4 py-2 hover:bg-gray-100"
-                >
-                  Настройки
-                </Link>
-                <p className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Выход</p>
-              </div>
-            )}
-          </div>
-        <a
-            href="/"
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+        <div className="relative inline-block">
+          <button
+            className="text-white text-4xl rounded-full"
+            onClick={() => setShowUserMenu(!showUserMenu)}
           >
-            На главную
-          </a>
+            <FaUserCircle />
+          </button>
+          {showUserMenu && (
+            <div className="absolute mt-2 right-0 md:left-0 bg-white rounded shadow-md w-48 z-50 overflow-hidden">
+              <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
+                {user.name}
+              </Link>
+              <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">
+                Настройки
+              </Link>
+              <button 
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              >
+                Выход
+              </button>
+            </div>
+          )}
+        </div>
+        <Link
+          to="/"
+          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+        >
+          На главную
+        </Link>
       </div>
-
 
       <div className="relative z-20 mt-8 max-w-md mx-auto bg-white p-6 rounded shadow">
         <h2 className="text-2xl font-bold mb-4">Настройки профиля</h2>
-
-        <div className="mb-4 flex items-center gap-4">
-          {user.avatar ? (
-            <img src={user.avatar} alt="Аватар" className="w-20 h-20 rounded-full object-cover" />
-          ) : (
-            <FaUserCircle className="w-20 h-20 text-gray-400" />
-          )}
-          <div className="flex flex-col gap-2">
-            <input
-              type="file"
-              accept="image/*"
-              id="avatar-file"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleAvatarChange(e.target.files[0]);
-              }}
-            />
-            <label
-              htmlFor="avatar-file"
-              className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 cursor-pointer text-center"
-            >
-              Заменить
-            </label>
-            {user.avatar && (
-              <button
-                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                onClick={handleRemoveAvatar}
-              >
-                Удалить
-              </button>
-            )}
-          </div>
-        </div>
 
         <div className="mb-4">
           <label className="block mb-1">Имя</label>
@@ -135,6 +148,17 @@ const SettingsPage = () => {
             value={user.name}
             onChange={(e) => handleChange("name", e.target.value)}
             className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-1">Email</label>
+          <input
+            type="email"
+            value={user.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            className="w-full border p-2 rounded"
+            disabled
           />
         </div>
 
@@ -177,10 +201,11 @@ const SettingsPage = () => {
         </div>
 
         <button
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full"
-          onClick={() => alert("Сохранено!")}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full disabled:opacity-50"
+          onClick={handleSave}
+          disabled={loading}
         >
-          Сохранить изменения
+          {loading ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
       </div>
     </div>

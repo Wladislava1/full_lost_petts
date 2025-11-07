@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from backend.database import engine, Base, SessionLocal
 from backend.routes import announcements, auth, user
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from backend.models import Ad
 import os
@@ -13,6 +14,14 @@ app = FastAPI(
     version="1.0.0",
     description="API для объявлений"
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 
 Base.metadata.create_all(bind=engine)
 os.makedirs("media", exist_ok=True)

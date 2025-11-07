@@ -23,6 +23,7 @@ class Ad(Base):
     description = Column(String)
     image = Column(String, nullable=True)
     contact_info = Column(JSON, nullable=True)
+    animal_name = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

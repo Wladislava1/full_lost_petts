@@ -12,6 +12,7 @@ class AdBase(BaseModel):
     title: str
     city: str
     description: str
+    animal_name: Optional[str] = None
 
 class AdCreate(AdBase):
     contact_info: Optional[List[ContactInfo]] = None
@@ -20,6 +21,7 @@ class AdUpdate(BaseModel):
     type: Optional[str] = None
     title: Optional[str] = None
     city: Optional[str] = None
+    animal_name: Optional[str] = None
     description: Optional[str] = None
     contact_info: Optional[List[ContactInfo]] = None
 

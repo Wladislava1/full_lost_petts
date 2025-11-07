@@ -1,3 +1,5 @@
 .env
 pets.db
 __pycache__/
+Lib/
+Scripts/

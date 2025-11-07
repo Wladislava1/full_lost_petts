@@ -1,21 +1,12 @@
 import { useState } from "react";
-
-interface Announcement {
-  animalName?: string;
-  title: string;
-  description: string;
-  date: string;
-  image: string;
-  found: boolean;
-  ownerName?: string;
-  contactInfo?: string[];
-}
+import type { EditableAnnouncement, Contact } from '../types/index';
+import { apiService } from '../services/api';
 
 interface EditAnnouncementModalProps {
-  announcement: Announcement;
+  announcement: EditableAnnouncement;
   onClose: () => void;
-  onSave: (updated: Announcement) => void;
-  onDelete: (announcement: Announcement) => void;
+  onSave: (updated: EditableAnnouncement) => void;
+  onDelete: () => void;
 }
 
 export default function EditAnnouncementModal({
@@ -24,171 +15,256 @@ export default function EditAnnouncementModal({
   onSave,
   onDelete,
 }: EditAnnouncementModalProps) {
-  const [formData, setFormData] = useState<Announcement>({ ...announcement });
+  const [formData, setFormData] = useState<EditableAnnouncement>({ 
+    ...announcement,
+    animalName: announcement.animalName || '',
+  });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleChange = (field: keyof Announcement,  value: Announcement[keyof Announcement]) => {
-    setFormData({ ...formData, [field]: value });
+  const contactTypes = ['Телефон', 'Телеграм', 'ВКонтакте', 'WhatsApp', 'Email'];
+
+  const handleChange = <K extends keyof EditableAnnouncement>(
+    field: K,
+    value: EditableAnnouncement[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleContactChange = (index: number, value: string) => {
-    const updatedContacts = formData.contactInfo ? [...formData.contactInfo] : [];
-    updatedContacts[index] = value;
-    handleChange("contactInfo", updatedContacts);
+  const handleContactChange = (index: number, field: keyof Contact, value: string | boolean) => {
+    const currentContacts = formData.contactInfo ? [...formData.contactInfo] : [];
+    const updated = [...currentContacts];
+    
+    if (!updated[index]) {
+      updated[index] = { type: 'Телефон', value: '', is_primary: false };
+    }
+    
+    updated[index] = { ...updated[index], [field]: value };
+    
+    if (field === 'is_primary' && value === true) {
+      updated.forEach((contact, i) => {
+        if (i !== index) contact.is_primary = false;
+      });
+    }
+    
+    handleChange("contactInfo", updated);
   };
 
   const addContactField = () => {
-    if (!formData.contactInfo) handleChange("contactInfo", [""]);
-    else if (formData.contactInfo.length < 3)
-      handleChange("contactInfo", [...formData.contactInfo, ""]);
-  };
-
-  const removeContactField = (index: number) => {
-    if (!formData.contactInfo) return;
-    const updatedContacts = [...formData.contactInfo];
-    updatedContacts.splice(index, 1);
-    handleChange("contactInfo", updatedContacts);
-  };
-
-  const handleDelete = () => {
-    if (confirm("Вы уверены, что хотите удалить это объявление?")) {
-      onDelete(announcement);
+    const current = formData.contactInfo || [];
+    if (current.length < 3) {
+      handleChange("contactInfo", [...current, { type: 'Телефон', value: '', is_primary: false }]);
     }
   };
 
+  const removeContactField = (index: number) => {
+    const current = formData.contactInfo || [];
+    const updated = current.filter((_, i) => i !== index);
+    
+    if (updated.length > 0 && !updated.some(contact => contact.is_primary)) {
+      updated[0].is_primary = true;
+    }
+    
+    handleChange("contactInfo", updated.length > 0 ? updated : []);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      console.log('Uploading image for announcement:', formData.id);
+      const response = await apiService.uploadAdImage(formData.id, file);
+      console.log('Image upload response:', response);
+      
+      // Обновляем изображение в состоянии (используем URL с сервера)
+      if (response.url) {
+        handleChange("image", response.url);
+        setSelectedFile(null); // Сбрасываем выбранный файл после успешной загрузки
+        alert('Изображение успешно загружено!');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Ошибка при загрузке изображения');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      // Сначала сохраняем данные объявления
+      onSave(formData);
+      
+      // Если есть выбранный файл, загружаем его
+      if (selectedFile) {
+        await handleFileUpload(selectedFile);
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving announcement:', error);
+    }
+  };
+
+  const contacts = formData.contactInfo || [];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-6 max-w-lg w-full relative overflow-y-auto max-h-[90vh]">
-        <button
-          className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-          onClick={onClose}
-        >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl">
           ✖
         </button>
 
-        <h2 className="text-2xl font-bold mb-4">Редактирование объявления</h2>
+        <h2 className="text-2xl font-bold mb-4">Редактирование</h2>
 
-        <input
-          type="text"
-          placeholder="Название"
-          value={formData.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-          className="w-full border p-2 rounded mb-2"
-        />
-
-        <input
-          type="text"
-          placeholder="Кличка животного"
-          value={formData.animalName || ""}
-          onChange={(e) => handleChange("animalName", e.target.value)}
-          className="w-full border p-2 rounded mb-2"
-        />
-
-        <textarea
-          placeholder="Описание"
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          className="w-full border p-2 rounded mb-2 h-20 resize-none"
-        />
-
-        <input
-          type="text"
-          placeholder="Владелец"
-          value={formData.ownerName || ""}
-          onChange={(e) => handleChange("ownerName", e.target.value)}
-          className="w-full border p-2 rounded mb-2"
-        />
-
-        <input
-          type="date"
-          value={formData.date}
-          onChange={(e) => handleChange("date", e.target.value)}
-          className="w-full border p-2 rounded mb-2"
-        />
-
-        <div className="mb-2">
-        <div className="flex gap-2 items-center">
-            <span className="border p-2 rounded flex-1 bg-gray-100">
-            {formData.image.split("/").pop() || "Файл не выбран"}
-            </span>
-            <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            id="replace-image-file"
-            onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                handleChange("image", file.name);
-                }
-            }}
-            />
-            <label
-            htmlFor="replace-image-file"
-            className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 cursor-pointer"
+        <div className="space-y-3">
+          <div>
+            <label className="font-medium block mb-1">Тип объявления:</label>
+            <select
+              value={formData.found ? "found" : "lost"}
+              onChange={e => handleChange("found", e.target.value === "found")}
+              className="w-full border p-2 rounded"
             >
-            Заменить
-            </label>
-        </div>
-        </div>
+              <option value="found">Находка</option>
+              <option value="lost">Пропажа</option>
+            </select>
+          </div>
 
-        <div className="mb-2">
-          <label className="mr-2">Статус: </label>
-          <select
-            value={formData.found ? "found" : "notFound"}
-            onChange={(e) => handleChange("found", e.target.value === "found")}
-            className="border p-2 rounded"
-          >
-            <option value="found">Найдено</option>
-            <option value="notFound">Не найдено</option>
-          </select>
-        </div>
+          <input
+            type="text"
+            placeholder="Заголовок"
+            value={formData.title}
+            onChange={e => handleChange("title", e.target.value)}
+            className="w-full border p-2 rounded"
+          />
 
-        <div className="mb-2">
-          <label className="font-medium">Контакты:</label>
-          {formData.contactInfo?.map((contact, index) => (
-            <div key={index} className="flex gap-2 mb-1">
-              <input
-                type="text"
-                value={contact}
-                onChange={(e) => handleContactChange(index, e.target.value)}
-                className="border p-2 rounded flex-1"
-              />
-              <button
-                type="button"
-                className="bg-red-500 text-white px-2 rounded hover:bg-red-600"
-                onClick={() => removeContactField(index)}
-              >
-                ✖
-              </button>
+          <input
+            type="text"
+            placeholder="Кличка животного"
+            value={formData.animalName || ""}
+            onChange={e => handleChange("animalName", e.target.value)}
+            className="w-full border p-2 rounded"
+          />
+
+          <input
+            type="text"
+            placeholder="Город"
+            value={formData.city}
+            onChange={e => handleChange("city", e.target.value)}
+            className="w-full border p-2 rounded"
+          />
+
+          <textarea
+            placeholder="Описание"
+            value={formData.description}
+            onChange={e => handleChange("description", e.target.value)}
+            className="w-full border p-2 rounded h-24 resize-none"
+          />
+
+          <div>
+            <label className="font-medium block mb-2">Фотография:</label>
+            <div className="flex gap-2 items-center">
+              <div className="flex-1 border p-2 rounded bg-gray-50 text-sm">
+                {selectedFile 
+                  ? `Новый файл: ${selectedFile.name}`
+                  : formData.image?.split("/").pop() || "Файл не выбран"}
+              </div>
+              <label className={`bg-blue-500 text-white px-3 py-1 rounded cursor-pointer hover:bg-blue-600 ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                {uploadingImage ? 'Загрузка...' : 'Заменить'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedFile(file);
+                      // Создаем preview, но не загружаем сразу
+                      const preview = URL.createObjectURL(file);
+                      handleChange("image", preview);
+                    }
+                  }}
+                />
+              </label>
             </div>
-          ))}
-          {(!formData.contactInfo || formData.contactInfo.length < 3) && (
-            <button
-              type="button"
-              onClick={addContactField}
-              className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-            >
-              Добавить контакт
-            </button>
-          )}
+            {selectedFile && (
+              <p className="text-sm text-gray-600 mt-1">
+                Файл будет загружен при сохранении объявления
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="font-medium block mb-2">Контакты:</label>
+            {contacts.map((contact, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <select
+                  value={contact.type}
+                  onChange={(e) => handleContactChange(i, 'type', e.target.value)}
+                  className="border p-2 rounded w-1/3"
+                >
+                  {contactTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={contact.value}
+                  onChange={e => handleContactChange(i, 'value', e.target.value)}
+                  className="flex-1 border p-2 rounded"
+                  placeholder="Значение контакта"
+                />
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center text-sm">
+                    <input
+                      type="checkbox"
+                      checked={contact.is_primary}
+                      onChange={(e) => handleContactChange(i, 'is_primary', e.target.checked)}
+                      className="mr-1"
+                    />
+                    основной
+                  </label>
+                  {contacts.length > 1 && (
+                    <button
+                      onClick={() => removeContactField(i)}
+                      className="bg-red-500 text-white px-2 rounded hover:bg-red-600"
+                    >
+                      ✖
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {contacts.length < 3 && (
+              <button
+                onClick={addContactField}
+                className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              >
+                + Добавить контакт
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-2 mt-4">
-          <button
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex-1"
-            onClick={() => onSave(formData)}
+        <div className="flex gap-2 mt-6">
+          <button 
+            onClick={handleSubmit} 
+            className="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600"
+            disabled={uploadingImage}
           >
-            Сохранить
+            {uploadingImage ? 'Сохранение...' : 'Сохранить'}
           </button>
-          <button
-            className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 flex-1"
-            onClick={onClose}
+          <button 
+            onClick={onClose} 
+            className="flex-1 bg-gray-400 text-white py-2 rounded hover:bg-gray-500"
+            disabled={uploadingImage}
           >
-            Отменить
+            Отмена
           </button>
-          <button
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex-1"
-            onClick={handleDelete}
+          <button 
+            onClick={onDelete} 
+            className="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600"
+            disabled={uploadingImage}
           >
             Удалить
           </button>

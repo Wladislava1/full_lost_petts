@@ -1,55 +1,78 @@
 import AnnouncementCard from '../components/AnnouncementCard';
 import AnnouncementModal from '../components/AnnouncementModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import bg2 from '../assets/bg2.jpg';
 import { FaUserCircle } from 'react-icons/fa';
-import { dataTest } from '../../fixtures/animal';
+import { apiService } from '../services/api';
 
 interface Announcement {
-  animalName?: string;
+  id: number;
+  type: string;
   title: string;
+  city: string;
   description: string;
-  date: string;
-  image: string;
-  found: boolean;
-  ownerName?: string;
-  contactInfo?: string[];
+  image?: string;
+  animal_name: string;
+  contact_info?: string[];
+  created_at: string;
+  user_id: number;
 }
 
 const HomePage = () => {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [search, setSearch] = useState('');
-  const [foundFilter, setFoundFilter] = useState<'all' | 'found' | 'notFound'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'lost' | 'found'>('all');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  const { user, logout } = useAuth();
 
-  const dummyData = dataTest;
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
 
-  const currentUser = 'Владислава';
+  const loadAnnouncements = async () => {
+    try {
+      const data = await apiService.getAnnouncements();
+      setAnnouncements(data);
+    } catch (error) {
+      console.error('Error loading announcements:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredData = dummyData.filter(item => {
+  const filteredData = announcements.filter(item => {
     const searchLower = search.toLowerCase();
+    const matchesSearch = 
+      item.title.toLowerCase().includes(searchLower) ||
+      item.animal_name.toLowerCase().includes(searchLower) ||
+      item.description.toLowerCase().includes(searchLower) ||
+      item.city.toLowerCase().includes(searchLower);
 
-    const combinedText = [
-      item.title,
-      item.description,
-      item.animalName,
-      item.ownerName,
-      ...(item.contactInfo || [])
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    const matchesSearch = combinedText.includes(searchLower);
-
-    const matchesFilter =
-      foundFilter === 'all' ||
-      (foundFilter === 'found' && item.found) ||
-      (foundFilter === 'notFound' && !item.found);
+    const matchesFilter = 
+      typeFilter === 'all' || 
+      (typeFilter === 'lost' && item.type === 'Пропажа') ||
+      (typeFilter === 'found' && item.type === 'Находка');
 
     return matchesSearch && matchesFilter;
   });
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Загрузка...</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -69,16 +92,26 @@ const HomePage = () => {
             </button>
             {showUserMenu && (
               <div className="absolute mt-2 right-0 md:left-0 bg-white rounded shadow-md w-48 z-50 overflow-hidden">
-                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
-                  {currentUser}
-                </Link>
-                <Link
-                  to="/settings"
+                <Link 
+                  to="/profile" 
                   className="block px-4 py-2 hover:bg-gray-100"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  {user?.name}
+                </Link>
+                <Link 
+                  to="/settings" 
+                  className="block px-4 py-2 hover:bg-gray-100"
+                  onClick={() => setShowUserMenu(false)}
                 >
                   Настройки
                 </Link>
-                <p className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Выход</p>
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 cursor-pointer"
+                >
+                  Выход
+                </button>
               </div>
             )}
           </div>
@@ -92,47 +125,54 @@ const HomePage = () => {
           />
 
           <select
-            value={foundFilter}
-            onChange={(e) => setFoundFilter(e.target.value as 'all' | 'found' | 'notFound')}
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as 'all' | 'lost' | 'found')}
             className="p-2 border rounded-full bg-blue-500 text-white mt-4"
           >
             <option value="all">Все</option>
-            <option value="found">Найдено</option>
-            <option value="notFound">Не найдено</option>
+            <option value="lost">Пропажа</option>
+            <option value="found">Находка</option>
           </select>
-
-          <a
-            href="/create"
+          <Link
+            to="/create"
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
           >
             Добавить объявление
-          </a>
+          </Link>
         </div>
 
         <div className="flex justify-center items-start py-12">
-            <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredData.map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => 
-                    setSelectedAnnouncement({
-                      ...item,
-                      contactInfo: Array.isArray(item.contactInfo) 
-                        ? item.contactInfo 
-                        : item.contactInfo ? [item.contactInfo] : []
-                    })
-                  }
-                >
-                  <AnnouncementCard {...item} />
-                </div>
-                ))}
-            </main>
+          <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredData.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => setSelectedAnnouncement(item)}
+                className="cursor-pointer transform transition hover:scale-105"
+              >
+                <AnnouncementCard
+                  title={item.title}
+                  description={item.description}
+                  date={new Date(item.created_at).toLocaleDateString()}
+                  image={item.image || '/default-image.jpg'}
+                  animalName={item.animal_name}
+                />
+              </div>
+            ))}
+          </main>
         </div>
       </div>
 
       {selectedAnnouncement && (
         <AnnouncementModal
-          announcement={selectedAnnouncement}
+          announcement={{
+            title: selectedAnnouncement.title,
+            description: selectedAnnouncement.description,
+            date: new Date(selectedAnnouncement.created_at).toLocaleDateString(),
+            image: selectedAnnouncement.image || '/default-image.jpg',
+            found: selectedAnnouncement.type === 'Находка',
+            ownerName: 'Неизвестно',
+            contactInfo: selectedAnnouncement.contact_info || []
+          }}
           onClose={() => setSelectedAnnouncement(null)}
         />
       )}

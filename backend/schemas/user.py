@@ -21,3 +21,8 @@ class UserProfile(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    
+class RegisterResponse(BaseModel):
+    user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
