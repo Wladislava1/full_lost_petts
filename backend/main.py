@@ -22,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 Base.metadata.create_all(bind=engine)
 os.makedirs("media", exist_ok=True)
 

@@ -199,6 +199,7 @@ const ProfilePage = () => {
                   date={new Date(item.created_at).toLocaleDateString()}
                   image={item.image || '/default-image.jpg'}
                   animalName={item.animal_name}
+                  city={item.city}
                 />
               </div>
             ))}

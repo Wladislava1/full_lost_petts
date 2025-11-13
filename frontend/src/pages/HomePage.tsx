@@ -155,6 +155,7 @@ const HomePage = () => {
                   date={new Date(item.created_at).toLocaleDateString()}
                   image={item.image || '/default-image.jpg'}
                   animalName={item.animal_name}
+                  city={item.city}
                 />
               </div>
             ))}
@@ -171,7 +172,8 @@ const HomePage = () => {
             image: selectedAnnouncement.image || '/default-image.jpg',
             found: selectedAnnouncement.type === 'Находка',
             ownerName: 'Неизвестно',
-            contactInfo: selectedAnnouncement.contact_info || []
+            contactInfo: selectedAnnouncement.contact_info || [],
+            city: selectedAnnouncement.city,
           }}
           onClose={() => setSelectedAnnouncement(null)}
         />

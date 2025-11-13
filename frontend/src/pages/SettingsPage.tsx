@@ -5,11 +5,16 @@ import { useAuth } from "../hooks/useAuth";
 import { apiService } from "../services/api";
 import bg2 from '../assets/bg2.jpg';
 
+interface Contact {
+  type: string;
+  value: string;
+}
+
 interface UserSettings {
   id?: number;
   name: string;
   email: string;
-  contacts: string[];
+  contacts: Contact[];
   city: string;
 }
 
@@ -17,12 +22,12 @@ const SettingsPage = () => {
   const [user, setUser] = useState<UserSettings>({
     name: "",
     email: "",
-    contacts: [""],
+    contacts: [{ type: 'Телефон', value: "" }],
     city: "",
   });
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const contactTypes = ['Телефон', 'Телеграм', 'ВКонтакте', 'WhatsApp', 'Email'];
   const { user: authUser, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -32,51 +37,91 @@ const SettingsPage = () => {
     }
   }, [authUser]);
 
+  const detectContactType = (value: string): string => {
+    const trimmed = value.trim();
+    
+    if (/^[+]?[0-9\s\-()]+$/.test(trimmed)) {
+      return 'Телефон';
+    } else if (trimmed.includes('@') && !trimmed.includes('t.me') && !trimmed.includes('vk.com')) {
+      return 'Email';
+    } else if (trimmed.includes('t.me') || trimmed.startsWith('@')) {
+      return 'Телеграм';
+    } else if (trimmed.includes('vk.com')) {
+      return 'ВКонтакте';
+    } else if (trimmed.includes('wa.me') || trimmed.includes('whatsapp')) {
+      return 'WhatsApp';
+    }
+    
+    return 'Телефон';
+  };
+
   const loadUserProfile = async () => {
     try {
       const profile = await apiService.getProfile();
       console.log('Profile data:', profile);
       
+      let userContacts: Contact[] = [{ type: 'Телефон', value: "" }];
+      
+      if (profile.contacts && profile.contacts.length > 0) {
+        userContacts = (profile.contacts as string[])
+          .filter(contact => contact.trim() !== '')
+          .map(contact => ({ 
+            type: detectContactType(contact),
+            value: contact 
+          }));
+      }
+      
       setUser({
         name: profile.name || "",
         email: profile.email || "",
         city: profile.city || "",
-        contacts: profile.contacts && profile.contacts.length > 0 ? profile.contacts : [""],
+        contacts: userContacts,
       });
     } catch (error) {
       console.error('Error loading profile:', error);
     }
   };
 
-  const handleChange = (field: keyof UserSettings, value: string | string[]) => {
+  const handleChange = (field: keyof Omit<UserSettings, 'contacts'>, value: string) => {
     setUser(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleContactChange = (index: number, value: string) => {
+  const handleContactChange = (index: number, field: 'type' | 'value', newValue: string) => {
     const updatedContacts = [...user.contacts];
-    updatedContacts[index] = value;
-    handleChange("contacts", updatedContacts);
+    updatedContacts[index] = { ...updatedContacts[index], [field]: newValue };
+    setUser(prev => ({ ...prev, contacts: updatedContacts }));
   };
 
   const addContactField = () => {
     if (user.contacts.length < 3) {
-      handleChange("contacts", [...user.contacts, ""]);
+      setUser(prev => ({
+        ...prev,
+        contacts: [...prev.contacts, { type: 'Телефон', value: "" }]
+      }));
     }
   };
 
   const removeContactField = (index: number) => {
     const updatedContacts = [...user.contacts];
     updatedContacts.splice(index, 1);
-    handleChange("contacts", updatedContacts.length > 0 ? updatedContacts : [""]);
+    setUser(prev => ({
+      ...prev,
+      contacts: updatedContacts.length > 0 ? updatedContacts : [{ type: 'Телефон', value: "" }]
+    }));
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Преобразуем контакты в массив строк для бэкенда
+      const contactsForBackend = user.contacts
+        .filter(c => c.value.trim() !== '')
+        .map(c => c.value.trim());
+
       await apiService.updateProfile({
         name: user.name,
         city: user.city.trim() === "" ? undefined : user.city,
-        contacts: user.contacts.filter(c => c.trim() !== ''),
+        contacts: contactsForBackend,
       });
       alert("Настройки сохранены!");
     } catch (error) {
@@ -183,12 +228,21 @@ const SettingsPage = () => {
           <label className="block mb-1">Контакты</label>
           {user.contacts.map((contact, index) => (
             <div key={index} className="flex gap-2 mb-2">
+              <select
+                value={contact.type}
+                onChange={(e) => handleContactChange(index, 'type', e.target.value)}
+                className="border p-2 rounded w-1/3"
+              >
+                {contactTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
               <input
                 type="text"
-                value={contact}
-                onChange={(e) => handleContactChange(index, e.target.value)}
+                value={contact.value}
+                onChange={(e) => handleContactChange(index, 'value', e.target.value)}
                 className="border p-2 rounded flex-1"
-                placeholder="Телефон, email или ссылка"
+                placeholder="Значение контакта"
               />
               {user.contacts.length > 1 && (
                 <button

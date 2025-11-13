@@ -6,6 +6,7 @@ interface AnnouncementCardProps {
   description?: string;
   date?: string;
   image: string;
+  city: string;
 }
 
 function AnnouncementCard({
@@ -14,9 +15,10 @@ function AnnouncementCard({
   description,
   date,
   image,
+  city,
 }: AnnouncementCardProps) {
   const imageUrl = getImageUrl(image);
-
+  
   return (
     <div className="bg-white border border-gray-300 rounded-lg shadow-md p-4 max-w-sm h-[420px] flex flex-col hover:shadow-lg transition-shadow">
       <div className="flex-[2] overflow-hidden rounded">
@@ -35,13 +37,12 @@ function AnnouncementCard({
           {title}
           {animalName && <span> - {animalName}</span>}
         </h2>
-
+          <p className="text-gray-600 text-sm mt-1">{city}</p>
         {description && (
-          <p className="text-gray-700 mt-1 text-sm line-clamp-3">
+          <p className="text-gray-700 mt-1 text-sm line-clamp-1">
             {description}
           </p>
         )}
-
         {date && (
           <p className="text-gray-500 text-xs mt-2 self-start">
             {date}

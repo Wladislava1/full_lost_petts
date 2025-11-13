@@ -14,13 +14,14 @@ type Announcement = {
   animalName?: string;
   ownerName?: string;
   contactInfo?: Contact[] | string[];
+  city: string;
 };
 
 export default function AnnouncementModal({ announcement, onClose }: { announcement: Announcement; onClose: () => void }) {
   const [shareOpen, setShareOpen] = useState(false);
 
   const imageUrl = getImageUrl(announcement.image);
-
+  console.log('City:', announcement.city);
   const contacts: Contact[] = (() => {
     if (!announcement.contactInfo) return [];
     
@@ -114,6 +115,8 @@ export default function AnnouncementModal({ announcement, onClose }: { announcem
           )}
 
           <p className="text-gray-700">{announcement.description}</p>
+          
+          <p className="text-gray-500 text-sm">Город: {announcement.city}</p>
 
           <p className="text-gray-500 text-sm">Дата: {announcement.date}</p>
 

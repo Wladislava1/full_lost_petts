@@ -30,7 +30,25 @@ const CreateAnnouncementPage = () => {
 
   const contactTypes = ['Телефон', 'Телеграм', 'ВКонтакте', 'WhatsApp', 'Email'];
 
-  // Загружаем профиль пользователя при монтировании компонента
+  // Функция автоматического определения типа контакта
+  const detectContactType = (value: string): string => {
+    const trimmed = value.trim();
+    
+    if (/^[+]?[0-9\s\-()]+$/.test(trimmed)) {
+      return 'Телефон';
+    } else if (trimmed.includes('@') && !trimmed.includes('t.me') && !trimmed.includes('vk.com')) {
+      return 'Email';
+    } else if (trimmed.includes('t.me') || trimmed.startsWith('@')) {
+      return 'Телеграм';
+    } else if (trimmed.includes('vk.com')) {
+      return 'ВКонтакте';
+    } else if (trimmed.includes('wa.me') || trimmed.includes('whatsapp')) {
+      return 'WhatsApp';
+    }
+    
+    return 'Телефон';
+  };
+
   useEffect(() => {
     if (user) {
       loadUserProfile();
@@ -43,19 +61,16 @@ const CreateAnnouncementPage = () => {
       const profile = await apiService.getProfile();
       console.log('User profile loaded:', profile);
       
-      // Предзаполняем город если он есть в профиле
       if (profile.city && profile.city.trim() !== '') {
         setCity(profile.city);
       }
-      
-      // Предзаполняем контакты если они есть в профиле
       if (profile.contacts && profile.contacts.length > 0) {
         const profileContacts = profile.contacts
           .filter(contact => contact.trim() !== '')
           .map((contact, index) => ({
-            type: 'Телефон', // По умолчанию телефон, пользователь может изменить
+            type: detectContactType(contact),
             value: contact,
-            is_primary: index === 0 // Первый контакт делаем основным
+            is_primary: index === 0
           }));
         
         if (profileContacts.length > 0) {
@@ -64,7 +79,6 @@ const CreateAnnouncementPage = () => {
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-      // Не показываем ошибку пользователю, просто оставляем поля пустыми
     } finally {
       setProfileLoading(false);
     }
@@ -78,12 +92,29 @@ const CreateAnnouncementPage = () => {
 
   const handleContactChange = (index: number, field: keyof Contact, value: string | boolean) => {
     const updated = [...contacts];
-    updated[index] = { ...updated[index], [field]: value };
     
-    if (field === 'is_primary' && value === true) {
-      updated.forEach((contact, i) => {
-        if (i !== index) contact.is_primary = false;
-      });
+    if (field === 'value') {
+      updated[index] = { 
+        ...updated[index], 
+        [field]: value as string,
+        type: detectContactType(value as string)
+      };
+    } else if (field === 'type') {
+      updated[index] = { 
+        ...updated[index], 
+        [field]: value as string 
+      };
+    } else if (field === 'is_primary') {
+      updated[index] = { 
+        ...updated[index], 
+        [field]: value as boolean 
+      };
+      
+      if (value === true) {
+        updated.forEach((contact, i) => {
+          if (i !== index) contact.is_primary = false;
+        });
+      }
     }
     
     setContacts(updated);
