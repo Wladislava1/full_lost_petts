@@ -4,8 +4,11 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import type { Contact } from '../types/index';
 import { getImageUrl } from '../hooks/url';
+import { useAuth } from '../hooks/useAuth';
 
 type Announcement = {
+  id?: number;     
+  user_id?: number; 
   title: string;
   description: string;
   date: string;
@@ -17,11 +20,22 @@ type Announcement = {
   city: string;
 };
 
-export default function AnnouncementModal({ announcement, onClose }: { announcement: Announcement; onClose: () => void }) {
+export default function AnnouncementModal({ 
+  announcement, 
+  onClose,
+  onDelete 
+}: { 
+  announcement: Announcement; 
+  onClose: () => void;
+  onDelete?: (id: number) => void; 
+}) {
   const [shareOpen, setShareOpen] = useState(false);
+  const { user } = useAuth();
+
+  const canEditOrDelete = user && announcement.id && (user.role === 'admin' || user.id === announcement.user_id);
 
   const imageUrl = getImageUrl(announcement.image);
-  console.log('City:', announcement.city);
+  
   const contacts: Contact[] = (() => {
     if (!announcement.contactInfo) return [];
     
@@ -100,9 +114,7 @@ export default function AnnouncementModal({ announcement, onClose }: { announcem
               className="w-full h-full object-cover rounded"
               onError={(e) => {
                 e.currentTarget.src = '/default-image.jpg';
-                console.error('Error loading image:', imageUrl);
               }}
-              onLoad={() => console.log('Image loaded successfully:', imageUrl)}
             />
           </div>
 
@@ -115,9 +127,7 @@ export default function AnnouncementModal({ announcement, onClose }: { announcem
           )}
 
           <p className="text-gray-700">{announcement.description}</p>
-          
           <p className="text-gray-500 text-sm">Город: {announcement.city}</p>
-
           <p className="text-gray-500 text-sm">Дата: {announcement.date}</p>
 
           <p className="text-sm">
@@ -148,7 +158,7 @@ export default function AnnouncementModal({ announcement, onClose }: { announcem
           </div>
         </div>
 
-        <div className="flex gap-2 mt-6">
+        <div className="flex flex-wrap gap-2 mt-6 p-4">
           <div className="relative">
             <button
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
@@ -179,6 +189,19 @@ export default function AnnouncementModal({ announcement, onClose }: { announcem
               Создать листовку
             </button>
           )}
+
+          {canEditOrDelete && onDelete && (
+             <button
+               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 ml-auto"
+               onClick={() => {
+                 onDelete(announcement.id!);
+                 onClose();
+               }}
+             >
+               Удалить
+             </button>
+          )}
+
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from backend.database import engine, Base, SessionLocal
-from backend.routes import announcements, auth, user
+from backend.routes import announcements, auth, user, admin
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -14,17 +15,17 @@ app = FastAPI(
     version="1.0.0",
     description="API для объявлений"
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)
 os.makedirs("media", exist_ok=True)
-
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
 def migrate_contact_data():
@@ -35,9 +36,8 @@ def migrate_contact_data():
             if ad.contact_info and isinstance(ad.contact_info, str):
                 ad.contact_info = [ad.contact_info]
         db.commit()
-        print("Миграция contact_info завершена")
     except Exception as e:
-        print(f"Ошибка миграции: {e}")
+        print(f"Ошибка: {e}")
         db.rollback()
     finally:
         db.close()
@@ -45,9 +45,8 @@ def migrate_contact_data():
 
 migrate_contact_data()
 
-app.include_router(announcements.router)
-app.include_router(auth.router)
-app.include_router(user.router)
+
+
 
 @app.get("/")
 def read_root():
@@ -80,4 +79,8 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+app.include_router(admin.router)
+app.include_router(announcements.router)
+app.include_router(auth.router)
+app.include_router(user.router)
 app.openapi = custom_openapi

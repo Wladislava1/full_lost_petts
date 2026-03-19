@@ -19,7 +19,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     token = create_access_token({"sub": new_user.email, "id": new_user.id})
     
     return {
-        "user": {"name": new_user.name, "email": new_user.email},
+        "user": new_user, 
         "access_token": token,
         "token_type": "bearer"
     }

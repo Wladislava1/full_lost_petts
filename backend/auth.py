@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from backend.core.security import decode_access_token
-from backend.models import User
+from backend.models import User, Role
 from sqlalchemy.orm import Session
 from backend.database import get_db
 
@@ -15,3 +15,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)):
+    if current_user.role != Role.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав: Требуется роль администратора"
+        )
+    return current_user

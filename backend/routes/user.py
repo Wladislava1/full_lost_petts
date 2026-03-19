@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from backend.database import get_db
 from backend.auth import get_current_user
 from backend.crud.ad import get_user_ads, update_ad, delete_ad
@@ -11,8 +11,10 @@ router = APIRouter(prefix="/user", tags=["User"])
 @router.get("/profile", response_model=UserProfile)
 def get_profile(user = Depends(get_current_user)):
     return UserProfile(
+        id=user.id,                
         name=user.name,
         email=user.email,
+        role=user.role,                 
         city=user.city or "",
         contacts=user.contacts or []
     )
@@ -35,8 +37,10 @@ def update_profile(
     db.refresh(user)
 
     return UserProfile(
+        id=user.id,
         name=user.name,
         email=user.email,
+        role=user.role,
         city=user.city or "",
         contacts=user.contacts or []
     )
@@ -50,16 +54,20 @@ def update_my_ad(ad_id: int,
                 ad_data: AdUpdate,
                 db: Session = Depends(get_db),
                 user = Depends(get_current_user)):
-    updated_ad = update_ad(db, ad_id, ad_data, user.id)
-    if not updated_ad:
-        raise HTTPException(status_code=404, detail="Ad not found or access denied")
+    updated_ad = update_ad(db, ad_id, ad_data, user)
+    if updated_ad is None:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    if updated_ad is False:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return updated_ad
 
 @router.delete("/my_ads/{ad_id}")
 def delete_my_ad(ad_id: int,
                 db: Session = Depends(get_db),
                 user = Depends(get_current_user)):
-    deleted_ad = delete_ad(db, ad_id, user.id)
-    if not deleted_ad:
-        raise HTTPException(status_code=404, detail="Ad not found or access denied")
+    deleted_ad = delete_ad(db, ad_id, user)
+    if deleted_ad is None:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    if deleted_ad is False:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return {"message": "Ad deleted successfully"}

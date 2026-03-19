@@ -1,8 +1,13 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON
+import enum
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base
+from backend.database import Base
 
+class Role(str, enum.Enum):
+    user = "user"
+    admin = "admin"
+    
 class User(Base):
     __tablename__ = "users"
 
@@ -12,7 +17,9 @@ class User(Base):
     hashed_password = Column(String)
     city = Column(String, nullable=True, default=None)
     contacts = Column(JSON, nullable=True, default=None)
-
+    
+    role = Column(Enum(Role), default=Role.user, nullable=False)
+    
     ads = relationship("Ad", back_populates="owner")
 
 class Ad(Base):

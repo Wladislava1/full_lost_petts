@@ -30,7 +30,6 @@ const CreateAnnouncementPage = () => {
 
   const contactTypes = ['Телефон', 'Телеграм', 'ВКонтакте', 'WhatsApp', 'Email'];
 
-  // Функция автоматического определения типа контакта
   const detectContactType = (value: string): string => {
     const trimmed = value.trim();
     

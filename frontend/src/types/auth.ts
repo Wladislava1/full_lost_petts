@@ -1,6 +1,8 @@
 export interface User {
   name: string;
   email: string;
+  id: number;
+  role: 'user' | 'admin';
 }
 
 export interface AuthContextType {

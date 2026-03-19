@@ -45,6 +45,20 @@ const HomePage = () => {
     }
   };
 
+  const handleDeleteAnnouncement = async (id: number) => {
+    if (window.confirm('Вы уверены, что хотите удалить это объявление?')) {
+      try {
+        await apiService.deleteAnnouncement(id);
+
+        setAnnouncements(prev => prev.filter(ad => ad.id !== id));
+        alert('Объявление успешно удалено');
+      } catch (error) {
+        console.error('Ошибка при удалении:', error);
+        alert('Не удалось удалить объявление. Возможно, у вас нет прав.');
+      }
+    }
+  };
+
   const filteredData = announcements.filter(item => {
     const searchLower = search.toLowerCase();
     const matchesSearch = 
@@ -106,6 +120,15 @@ const HomePage = () => {
                 >
                   Настройки
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link 
+                    to="/admin" 
+                    className="block px-4 py-2 hover:bg-gray-100 text-orange-600 font-semibold"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Панель админа
+                  </Link>
+                )}
                 <button 
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 cursor-pointer"
@@ -143,22 +166,34 @@ const HomePage = () => {
 
         <div className="flex justify-center items-start py-12">
           <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredData.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedAnnouncement(item)}
-                className="cursor-pointer transform transition hover:scale-105"
-              >
-                <AnnouncementCard
-                  title={item.title}
-                  description={item.description}
-                  date={new Date(item.created_at).toLocaleDateString()}
-                  image={item.image || '/default-image.jpg'}
-                  animalName={item.animal_name}
-                  city={item.city}
-                />
-              </div>
-            ))}
+            {filteredData.map((item) => {
+              const hasUserId = user?.id !== undefined;
+              const hasAuthorId = item.user_id !== undefined;
+              const isAdmin = user?.role === 'admin';
+              const isOwner = hasUserId && hasAuthorId && user.id === item.user_id;
+              const canDelete = isAdmin || isOwner;
+              console.log(`[Card ${item.id}] Me: ${user?.id} | Author: ${item.user_id} | canDelete: ${canDelete}`);
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedAnnouncement(item)}
+                  className="cursor-pointer transform transition hover:scale-105"
+                >
+                  <AnnouncementCard
+                    id={item.id}              
+                    user_id={item.user_id}    
+                    title={item.title}
+                    description={item.description}
+                    date={new Date(item.created_at).toLocaleDateString()}
+                    image={item.image || '/default-image.jpg'}
+                    animalName={item.animal_name}
+                    city={item.city}
+                    onDelete={canDelete ? handleDeleteAnnouncement : undefined} 
+                  />
+                </div>
+              );
+            })}
           </main>
         </div>
       </div>
@@ -166,6 +201,8 @@ const HomePage = () => {
       {selectedAnnouncement && (
         <AnnouncementModal
           announcement={{
+            id: selectedAnnouncement.id,             
+            user_id: selectedAnnouncement.user_id,   
             title: selectedAnnouncement.title,
             description: selectedAnnouncement.description,
             date: new Date(selectedAnnouncement.created_at).toLocaleDateString(),
@@ -176,6 +213,7 @@ const HomePage = () => {
             city: selectedAnnouncement.city,
           }}
           onClose={() => setSelectedAnnouncement(null)}
+          onDelete={handleDeleteAnnouncement}
         />
       )}
     </div>

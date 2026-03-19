@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -7,14 +6,18 @@ import RegisterPage from './pages/RegisterPage';
 import CreateAnnouncementPage from './pages/CreateAnnouncementPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
-
+import AdminPage from './pages/AdminPage';
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Защищенный роут только для администратора */}
+          <Route element={<ProtectedRoute requiredRole="admin" />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
+          
           <Route 
             path="/" 
             element={
@@ -49,9 +52,7 @@ const App = () => {
           />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
-  );
+ );
 };
 
 export default App;

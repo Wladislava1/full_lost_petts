@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap');
+
+:root {
+  --bg-color: #F8FAFC;
+  --card-bg: #FFFFFF;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --royal-blue: #4169E1;
+  --royal-blue-hover: #3154b3;
+  --border-color: #E2E8F0;
+  
+  --status-red: #EF4444;
+  --status-yellow: #F59E0B;
+  --status-green: #10B981;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.dashboard-container {
+  max-width: 600px;
+  width: 100%;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.toggle-btn {
+  background-color: var(--border-color);
+  color: var(--text-main);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background-color: #CBD5E1;
+}
+
+.product-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.product-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-NONE { background-color: var(--status-red); }
+.status-PENDING { background-color: var(--status-yellow); }
+.status-ACTIVE { background-color: var(--status-green); }
+
+.action-btn {
+  background-color: var(--royal-blue);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+  background-color: var(--royal-blue-hover);
+}
+
+.action-btn:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+}

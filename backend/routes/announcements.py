@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.schemas.ad import AdCreate, AdResponse, AdUpdate
-from backend.models import Ad
+from backend.models import Ad, Role, User
 from backend.auth import get_current_user  
 from backend.crud.ad import get_ads, get_ad, create_ad, update_ad, delete_ad
 from backend.core.storage import storage
@@ -23,30 +23,37 @@ def get_ad_by_id(ad_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=AdResponse)
 def create_new_ad(ad: AdCreate, 
                   db: Session = Depends(get_db),
-                  user = Depends(get_current_user)):
+                  user: User = Depends(get_current_user)):
     return create_ad(db, ad, user.id)
 
 @router.put("/{ad_id}", response_model=AdResponse)
 def update_existing_ad(ad_id: int, 
                       ad_data: AdUpdate,
                       db: Session = Depends(get_db),
-                      user = Depends(get_current_user)):
-    updated_ad = update_ad(db, ad_id, ad_data, user.id)
-    if not updated_ad:
-        raise HTTPException(status_code=404, detail="Ad not found or access denied")
+                      user: User = Depends(get_current_user)):
+    updated_ad = update_ad(db, ad_id, ad_data, user)
+    if updated_ad is None:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    if updated_ad is False:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return updated_ad
 
 @router.delete("/{ad_id}")
-def delete_existing_ad(ad_id: int,
-                      db: Session = Depends(get_db),
-                      user = Depends(get_current_user)):
-    deleted_ad = delete_ad(db, ad_id, user.id)
-    if not deleted_ad:
-        raise HTTPException(status_code=404, detail="Ad not found or access denied")
-    return {"message": "Ad deleted successfully"}
+def delete_announcement(
+    ad_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    deleted_ad = delete_ad(db, ad_id, current_user)
+    if deleted_ad is None:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    if deleted_ad is False:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    
+    return {"message": "Успешно удалено"}
 
 @router.post("/upload")
-async def upload_image(file: UploadFile = File(...), user = Depends(get_current_user)):
+async def upload_image(file: UploadFile = File(...), user: User = Depends(get_current_user)):
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
@@ -62,10 +69,13 @@ async def upload_image(file: UploadFile = File(...), user = Depends(get_current_
 async def upload_ad_image(ad_id: int,
                    file: UploadFile = File(...),
                    db: Session = Depends(get_db),
-                   user = Depends(get_current_user)):
-    ad = db.query(Ad).filter(Ad.id == ad_id, Ad.user_id == user.id).first()
+                   user: User = Depends(get_current_user)):
+    ad = db.query(Ad).filter(Ad.id == ad_id).first()
     if not ad:
-        raise HTTPException(status_code=404, detail="Ad not found or access denied")
+        raise HTTPException(status_code=404, detail="Ad not found")
+    
+    if user.role != Role.admin and ad.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")

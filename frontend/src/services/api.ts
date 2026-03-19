@@ -32,6 +32,17 @@ class ApiService {
     return response.json();
   }
 
+  async get(endpoint: string) {
+    return this.request(endpoint);
+  }
+
+  async patch(endpoint: string, body: unknown) {
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
+
   async login(email: string, password: string) {
     console.log('Login attempt for:', email);
     const result = await this.request('/auth/login', {
@@ -117,13 +128,14 @@ class ApiService {
     return response.json();
   }
 
- async getProfile(): Promise<{
+  async getProfile(): Promise<{
+    id: number;
     name: string;
     email: string;
+    role: 'user' | 'admin';
     city: string;
     contacts: string[];
   }> {
-
     return this.request('/user/profile');
   }
 
@@ -144,3 +156,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+export default apiService;

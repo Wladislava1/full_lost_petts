@@ -1,4 +1,11 @@
 from pydantic import BaseModel, EmailStr
+from backend.models import Role
+
+class UserBase(BaseModel):
+    name: str
+    email: str
+    password: str
+    password_repeat: str
 
 class UserCreate(BaseModel):
     name: str
@@ -11,12 +18,22 @@ class UserLogin(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
+    id: int
     name: str
     email: str
+    role: Role
+
+    class Config:
+        from_attributes = True
+
+class UserRoleUpdate(BaseModel):
+    role: Role
 
 class UserProfile(BaseModel):
+    id: int          
     name: str
     email: str
+    role: Role         
     city: str | None = None
     contacts: list[str] = []
 
