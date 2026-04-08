@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import bg2 from '../assets/bg2.jpg';
-import { FaUserCircle } from 'react-icons/fa';
+import { FaUserCircle, FaCamera } from 'react-icons/fa';
 import EditAnnouncementModal from "../components/EditAnnouncementModal";
 import type { Announcement, EditableAnnouncement, Contact } from '../types/index';
 type BackendContact = Contact | string;
@@ -16,6 +16,23 @@ const ProfilePage = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      try {
+        setAvatarUploading(true);
+        await apiService.uploadAvatar(e.target.files[0]);
+        alert('Аватар успешно загружен!');
+        window.location.reload();
+      } catch (error) {
+        console.error('Ошибка загрузки аватара', error);
+        alert('Не удалось загрузить аватар');
+      } finally {
+        setAvatarUploading(false);
+      }
+    }
+  };
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -145,8 +162,12 @@ const ProfilePage = () => {
       <div className="relative z-10">
         <div className="sticky top-0 z-20 bg-black bg-opacity-20 p-4 rounded-md mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="relative">
-            <button onClick={() => setShowUserMenu(!showUserMenu)} className="text-white text-4xl">
-              <FaUserCircle />
+            <button onClick={() => setShowUserMenu(!showUserMenu)} className="text-white text-4xl hover:text-gray-200 transition">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-white" />
+              ) : (
+                <FaUserCircle />
+              )}
             </button>
             {showUserMenu && (
               <div className="absolute mt-2 right-0 md:left-0 bg-white rounded shadow-lg w-48 z-50">
@@ -186,7 +207,36 @@ const ProfilePage = () => {
         </div>
 
         <div className="flex justify-center py-8 px-4">
-          <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl w-full">
+          <div className="w-full max-w-7xl">
+            <div className="bg-white bg-opacity-95 p-6 rounded-lg shadow-md mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
+              <div className="relative w-32 h-32 flex-shrink-0 group">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-blue-500 shadow-sm" />
+                ) : (
+                  <FaUserCircle className="w-32 h-32 text-gray-300 bg-white rounded-full mx-auto" />
+                )}
+                
+                <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                  <FaCamera className="text-2xl" />
+                  <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleAvatarChange} 
+                      disabled={avatarUploading} 
+                  />
+                </label>
+              </div>
+              <div className="text-center md:text-left mt-2">
+                <h1 className="text-3xl font-bold text-gray-800">{user?.name}</h1>
+                <p className="text-gray-600 mt-1">{user?.email}</p>
+                <p className="mt-4 inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                   Моих объявлений: {userAnnouncements.length}
+                </p>
+              </div>
+            </div>
+
+            <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredData.map((item) => (
               <div
                 key={item.id}
@@ -204,6 +254,7 @@ const ProfilePage = () => {
               </div>
             ))}
           </main>
+        </div>
         </div>
       </div>
 

@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: Role
+    avatar_url: str | None = None
 
     class Config:
         from_attributes = True
@@ -36,6 +37,7 @@ class UserProfile(BaseModel):
     role: Role         
     city: str | None = None
     contacts: list[str] = []
+    avatar_url: str | None = None
 
 class UserUpdate(BaseModel):
     name: str | None = None

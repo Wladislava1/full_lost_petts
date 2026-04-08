@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Query
+from typing import Optional
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.schemas.ad import AdCreate, AdResponse, AdUpdate
@@ -10,8 +11,13 @@ from backend.core.storage import storage
 router = APIRouter(prefix="/announcements", tags=["Announcements"])
 
 @router.get("/", response_model=list[AdResponse])
-def list_ads(db: Session = Depends(get_db)):
-    return get_ads(db)
+def list_ads(
+    ad_type: Optional[str] = Query(None, alias="type"),
+    animal_name: Optional[str] = Query(None),
+    city: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return get_ads(db, ad_type=ad_type, animal_name=animal_name, city=city)
 
 @router.get("/{ad_id}", response_model=AdResponse)
 def get_ad_by_id(ad_id: int, db: Session = Depends(get_db)):

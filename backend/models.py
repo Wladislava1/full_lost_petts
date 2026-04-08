@@ -17,6 +17,7 @@ class User(Base):
     hashed_password = Column(String)
     city = Column(String, nullable=True, default=None)
     contacts = Column(JSON, nullable=True, default=None)
+    avatar_url = Column(String, nullable=True)
     
     role = Column(Enum(Role), default=Role.user, nullable=False)
     

@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           name: profileData.name,
           email: profileData.email,
           role: profileData.role,
+          avatar_url: profileData.avatar_url,
         });
       } catch (error) {
         console.error('Ошибка проверки токена', error);

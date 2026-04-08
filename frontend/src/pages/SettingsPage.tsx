@@ -113,7 +113,6 @@ const SettingsPage = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Преобразуем контакты в массив строк для бэкенда
       const contactsForBackend = user.contacts
         .filter(c => c.value.trim() !== '')
         .map(c => c.value.trim());
@@ -124,6 +123,8 @@ const SettingsPage = () => {
         contacts: contactsForBackend,
       });
       alert("Настройки сохранены!");
+      window.location.href = '/profile'; 
+      
     } catch (error) {
       console.error('Error saving settings:', error);
       alert("Ошибка при сохранении настроек");

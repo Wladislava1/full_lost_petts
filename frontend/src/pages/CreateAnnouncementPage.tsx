@@ -65,8 +65,8 @@ const CreateAnnouncementPage = () => {
       }
       if (profile.contacts && profile.contacts.length > 0) {
         const profileContacts = profile.contacts
-          .filter(contact => contact.trim() !== '')
-          .map((contact, index) => ({
+          .filter((contact: string) => contact.trim() !== '')
+          .map((contact: string, index: number) => ({
             type: detectContactType(contact),
             value: contact,
             is_primary: index === 0
@@ -164,7 +164,7 @@ const CreateAnnouncementPage = () => {
 
       if (image && newAnnouncement.id) {
         console.log('Uploading image for announcement:', newAnnouncement.id);
-        await apiService.uploadAdImage(newAnnouncement.id, image);
+        await apiService.uploadImage(newAnnouncement.id, image);
         console.log('Image uploaded successfully');
       }
 

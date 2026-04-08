@@ -1,10 +1,25 @@
+from typing import Optional
 from sqlalchemy.orm import Session
 from backend.models import Ad, User, Role
 from backend.schemas.ad import AdCreate, AdUpdate
 from backend.core.storage import storage
 
-def get_ads(db: Session):
-    return db.query(Ad).all()
+def get_ads(
+    db: Session, 
+    ad_type: Optional[str] = None, 
+    animal_name: Optional[str] = None, 
+    city: Optional[str] = None
+):
+    query = db.query(Ad)
+    
+    if ad_type:
+        query = query.filter(Ad.type == ad_type)
+    if animal_name:
+        query = query.filter(Ad.animal_name.ilike(f"%{animal_name}%"))
+    if city:
+        query = query.filter(Ad.city.ilike(f"%{city}%"))
+        
+    return query.all()
 
 def get_ad(db: Session, ad_id: int):
     return db.query(Ad).filter(Ad.id == ad_id).first()

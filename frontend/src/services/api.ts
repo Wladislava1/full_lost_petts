@@ -127,7 +127,40 @@ class ApiService {
     return response.json();
   }
 
-  async getAnnouncements() { return this.request('/announcements/'); }
+  async uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = this.getAuthHeader();
+
+    const response = await fetch(`${API_BASE_URL}/user/avatar`, {
+      method: 'POST',
+      headers,
+      body: formData,
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+          window.location.href = '/login';
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+  
+  async getAnnouncements(filters?: Record<string, string>) {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== 'all') {
+          params.append(key, value);
+        }
+      });
+    }
+    return this.request(`/announcements/?${params.toString()}`);
+  }
   async getAnnouncement(id: number) { return this.request(`/announcements/${id}`); }
   async createAnnouncement(announcement: unknown) {
     return this.request('/announcements/', { method: 'POST', body: JSON.stringify(announcement) });

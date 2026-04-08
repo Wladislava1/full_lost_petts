@@ -32,11 +32,19 @@ const HomePage = () => {
 
   useEffect(() => {
     loadAnnouncements();
-  }, []);
+  }, [typeFilter, search]);
 
   const loadAnnouncements = async () => {
+    setLoading(true);
     try {
-      const data = await apiService.getAnnouncements();
+      const filters: Record<string, string> = {};
+      
+      if (typeFilter === 'lost') filters.type = 'Пропажа';
+      if (typeFilter === 'found') filters.type = 'Находка';
+      
+      if (search) filters.animal_name = search; 
+
+      const data = await apiService.getAnnouncements(filters);
       setAnnouncements(data);
     } catch (error) {
       console.error('Error loading announcements:', error);
