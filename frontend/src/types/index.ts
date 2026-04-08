@@ -25,6 +25,8 @@ export interface Announcement {
   description: string;
   image?: string;
   animal_name: string;
+  latitude?: number | null;
+  longitude?: number | null;
   contact_info?: string[];
   created_at: string;
   user_id: number;
@@ -40,6 +42,8 @@ export interface EditableAnnouncement {
   found: boolean;
   animalName?: string;
   ownerName?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   contactInfo?: Contact[];
 }
 

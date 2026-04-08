@@ -6,6 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import bg2 from '../assets/bg2.jpg';
 import { FaUserCircle } from 'react-icons/fa';
 import { apiService } from '../services/api';
+// 1. Добавили импорт Helmet
+import { Helmet } from 'react-helmet-async';
 
 interface Announcement {
   id: number;
@@ -18,6 +20,9 @@ interface Announcement {
   contact_info?: string[];
   created_at: string;
   user_id: number;
+  // 2. Добавили координаты, чтобы TypeScript их пропускал
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const HomePage = () => {
@@ -101,6 +106,12 @@ const HomePage = () => {
       className="min-h-screen bg-cover bg-center relative"
       style={{ backgroundImage: `url(${bg2})` }}
     >
+      {/* 3. Добавили Helmet для изменения названия вкладки браузера */}
+      <Helmet>
+        <title>Поиск питомцев | Главная</title>
+        <meta name="description" content="База данных пропавших и найденных животных. Поможем питомцам вернуться домой." />
+      </Helmet>
+
       <div className="absolute inset-0 bg-black opacity-20"></div>
 
       <div className="relative z-10">
@@ -180,7 +191,6 @@ const HomePage = () => {
               const isAdmin = user?.role === 'admin';
               const isOwner = hasUserId && hasAuthorId && user.id === item.user_id;
               const canDelete = isAdmin || isOwner;
-              console.log(`[Card ${item.id}] Me: ${user?.id} | Author: ${item.user_id} | canDelete: ${canDelete}`);
 
               return (
                 <div
@@ -219,6 +229,9 @@ const HomePage = () => {
             ownerName: 'Неизвестно',
             contactInfo: selectedAnnouncement.contact_info || [],
             city: selectedAnnouncement.city,
+            // 4. ПЕРЕДАЕМ КООРДИНАТЫ В МОДАЛКУ (раньше они сюда не доходили)
+            latitude: selectedAnnouncement.latitude,
+            longitude: selectedAnnouncement.longitude,
           }}
           onClose={() => setSelectedAnnouncement(null)}
           onDelete={handleDeleteAnnouncement}

@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import bg2 from '../assets/bg2.jpg';
 import { Link } from 'react-router-dom';
+// 1. Добавляем импорты для Яндекс Карт
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 
 type Contact = {
   type: string;
@@ -21,6 +23,10 @@ const CreateAnnouncementPage = () => {
     { type: 'Телефон', value: '', is_primary: true }
   ]);
   const [image, setImage] = useState<File | null>(null);
+  
+  // 2. Добавляем состояние для координат (широта и долгота)
+  const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
+  
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState('');
@@ -142,12 +148,15 @@ const CreateAnnouncementPage = () => {
     }
 
     try {
+      // 3. Добавляем координаты в объект, отправляемый на сервер
       const announcementData = {
         type: type === 'lost' ? 'Пропажа' : 'Находка',
         title,
         city,
         description,
         animal_name: animalName,
+        latitude: coordinates ? coordinates[0] : null,  // Добавили широту
+        longitude: coordinates ? coordinates[1] : null, // Добавили долготу
         contact_info: contacts
           .filter(contact => contact.value.trim() !== '')
           .map((contact) => ({
@@ -177,6 +186,13 @@ const CreateAnnouncementPage = () => {
     }
   };
 
+  // Обработчик клика по карте
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleMapClick = (e: any) => {
+    const coords = e.get('coords');
+    setCoordinates(coords);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -196,7 +212,7 @@ const CreateAnnouncementPage = () => {
 
   return (
     <div
-      className="min-h-screen bg-cover bg-center relative flex items-center justify-center p-4"
+      className="min-h-screen bg-cover bg-center relative flex items-center justify-center p-4 py-10"
       style={{ backgroundImage: `url(${bg2})` }}
     >
       <div className="absolute inset-0 bg-black opacity-30"></div>
@@ -208,7 +224,8 @@ const CreateAnnouncementPage = () => {
         Главная
       </Link>
 
-      <div className="relative z-10 w-full max-w-md bg-white rounded-lg border shadow-lg p-6">
+      {/* Немного расширили карточку (max-w-2xl), чтобы карта хорошо смотрелась */}
+      <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg border shadow-lg p-6">
         <h1 className="text-2xl font-bold mb-4 text-center">Создать объявление</h1>
 
         {error && <div className="text-red-500 text-sm mb-4 text-center">{error}</div>}
@@ -268,6 +285,29 @@ const CreateAnnouncementPage = () => {
             onChange={(e) => setDescription(e.target.value)}
             required
           ></textarea>
+
+          {/* 4. Блок с Яндекс Картой */}
+          <div>
+            <label className="font-medium block mb-2">Укажите место на карте (кликните):</label>
+            <div className="border rounded overflow-hidden h-64 w-full">
+              <YMaps>
+                <Map
+                  defaultState={{ center: [55.751574, 37.573856], zoom: 9 }} // По умолчанию Москва
+                  width="100%"
+                  height="100%"
+                  onClick={handleMapClick}
+                >
+                  {/* Отрисовка метки, если координаты выбраны */}
+                  {coordinates && <Placemark geometry={coordinates} />}
+                </Map>
+              </YMaps>
+            </div>
+            {coordinates && (
+              <p className="text-sm text-gray-500 mt-1">
+                Выбраны координаты: {coordinates[0].toFixed(5)}, {coordinates[1].toFixed(5)}
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="font-medium block mb-2">

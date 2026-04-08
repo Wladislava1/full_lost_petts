@@ -13,6 +13,8 @@ class AdBase(BaseModel):
     city: str
     description: str
     animal_name: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class AdCreate(AdBase):
     contact_info: Optional[List[ContactInfo]] = None
@@ -24,6 +26,9 @@ class AdUpdate(BaseModel):
     animal_name: Optional[str] = None
     description: Optional[str] = None
     contact_info: Optional[List[ContactInfo]] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    
 
 class AdResponse(AdBase):
     id: int

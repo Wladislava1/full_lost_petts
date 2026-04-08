@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Enum, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from backend.database import Base
@@ -31,6 +31,8 @@ class Ad(Base):
     title = Column(String, index=True)
     city = Column(String, index=True)
     description = Column(String)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     image = Column(String, nullable=True)
     contact_info = Column(JSON, nullable=True)
     animal_name = Column(String, nullable=True)

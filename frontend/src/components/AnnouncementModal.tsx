@@ -5,6 +5,7 @@ import html2canvas from "html2canvas";
 import type { Contact } from '../types/index';
 import { getImageUrl } from '../hooks/url';
 import { useAuth } from '../hooks/useAuth';
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 
 type Announcement = {
   id?: number;     
@@ -18,6 +19,9 @@ type Announcement = {
   ownerName?: string;
   contactInfo?: Contact[] | string[];
   city: string;
+  // 2. Добавляем координаты
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export default function AnnouncementModal({ 
@@ -136,8 +140,32 @@ export default function AnnouncementModal({
             </span>
           </p>
 
+          {/* 3. Блок с картой для просмотра */}
+          {announcement.latitude && announcement.longitude && (
+            <div className="mt-4">
+            <p className="font-medium mb-2">Место на карте:</p>
+            {announcement.latitude && announcement.longitude ? (
+              <div className="border rounded overflow-hidden h-48 w-full">
+                <YMaps>
+                  <Map
+                    defaultState={{ center: [announcement.latitude, announcement.longitude], zoom: 14 }}
+                    width="100%"
+                    height="100%"
+                  >
+                    <Placemark geometry={[announcement.latitude, announcement.longitude]} />
+                  </Map>
+                </YMaps>
+              </div>
+            ) : (
+              <div className="border rounded bg-gray-100 h-48 w-full flex items-center justify-center text-gray-500">
+                Точные координаты не указаны
+              </div>
+            )}
+          </div>
+          )}
+
           <div>
-            <p className="font-medium">Контакты:</p>
+            <p className="font-medium mt-4">Контакты:</p>
             {contacts.length > 0 ? (
               <ul className="list-disc list-inside mt-1 space-y-1">
                 {contacts.map((contact, index) => (

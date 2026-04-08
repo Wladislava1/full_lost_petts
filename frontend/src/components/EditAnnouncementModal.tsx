@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { EditableAnnouncement, Contact } from '../types/index';
 import { apiService } from '../services/api';
+// 1. Импорт Яндекс Карт
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 
 interface EditAnnouncementModalProps {
   announcement: EditableAnnouncement;
@@ -72,13 +74,12 @@ export default function EditAnnouncementModal({
     setUploadingImage(true);
     try {
       console.log('Uploading image for announcement:', formData.id);
-      const response = await apiService.uploadAdImage(formData.id, file);
+      const response = await apiService.uploadImage(formData.id, file);
       console.log('Image upload response:', response);
       
-      // Обновляем изображение в состоянии (используем URL с сервера)
       if (response.url) {
         handleChange("image", response.url);
-        setSelectedFile(null); // Сбрасываем выбранный файл после успешной загрузки
+        setSelectedFile(null);
         alert('Изображение успешно загружено!');
       }
     } catch (error) {
@@ -91,10 +92,8 @@ export default function EditAnnouncementModal({
 
   const handleSubmit = async () => {
     try {
-      // Сначала сохраняем данные объявления
       onSave(formData);
       
-      // Если есть выбранный файл, загружаем его
       if (selectedFile) {
         await handleFileUpload(selectedFile);
       }
@@ -103,6 +102,13 @@ export default function EditAnnouncementModal({
     } catch (error) {
       console.error('Error saving announcement:', error);
     }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleMapClick = (e: any) => {
+    const coords = e.get('coords');
+    handleChange("latitude", coords[0]);
+    handleChange("longitude", coords[1]);
   };
 
   const contacts = formData.contactInfo || [];
@@ -160,6 +166,35 @@ export default function EditAnnouncementModal({
             className="w-full border p-2 rounded h-24 resize-none"
           />
 
+          {/* 3. Интерактивная карта */}
+          <div>
+            <label className="font-medium block mb-2">Укажите место на карте (кликните для изменения):</label>
+            <div className="border rounded overflow-hidden h-48 w-full">
+              <YMaps>
+                <Map
+                  defaultState={{ 
+                    center: (formData.latitude && formData.longitude) 
+                      ? [formData.latitude, formData.longitude] 
+                      : [55.751574, 37.573856], 
+                    zoom: (formData.latitude && formData.longitude) ? 14 : 9 
+                  }}
+                  width="100%"
+                  height="100%"
+                  onClick={handleMapClick}
+                >
+                  {formData.latitude && formData.longitude && (
+                    <Placemark geometry={[formData.latitude, formData.longitude]} />
+                  )}
+                </Map>
+              </YMaps>
+            </div>
+            {formData.latitude && formData.longitude && (
+              <p className="text-sm text-gray-500 mt-1">
+                Выбраны координаты: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
+              </p>
+            )}
+          </div>
+
           <div>
             <label className="font-medium block mb-2">Фотография:</label>
             <div className="flex gap-2 items-center">
@@ -179,7 +214,6 @@ export default function EditAnnouncementModal({
                     const file = e.target.files?.[0];
                     if (file) {
                       setSelectedFile(file);
-                      // Создаем preview, но не загружаем сразу
                       const preview = URL.createObjectURL(file);
                       handleChange("image", preview);
                     }
@@ -195,7 +229,7 @@ export default function EditAnnouncementModal({
           </div>
 
           <div>
-            <label className="font-medium block mb-2">Контакты:</label>
+            <label className="font-medium block mt-4 mb-2">Контакты:</label>
             {contacts.map((contact, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <select
