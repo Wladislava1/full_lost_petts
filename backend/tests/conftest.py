@@ -41,32 +41,28 @@ def client(db_session):
         
     app.dependency_overrides.clear()
 
-# Добавьте эти фикстуры:
-
-@pytest.fixture(scope="function")
-def auth_token():
-    """Фикстура для тестового токена"""
-    return "test-token-for-auth"
-
+# Исправленный мок — правильный путь: backend.auth.get_current_user
 @pytest.fixture(scope="function", autouse=True)
 def mock_auth():
     """Автоматический мок для аутентификации во всех тестах"""
-    with patch('backend.routes.announcements.get_current_user') as mock_announcements:
-        mock_announcements.return_value = {"id": 1, "email": "owner@example.com", "name": "Test Owner"}
-        
-        with patch('backend.routes.auth.get_current_user') as mock_auth:
-            mock_auth.return_value = {"id": 1, "email": "owner@example.com", "name": "Test Owner"}
-            
-            with patch('backend.routes.user.get_current_user') as mock_user:
-                mock_user.return_value = {"id": 1, "email": "owner@example.com", "name": "Test Owner"}
-                
-                yield
+    with patch('backend.auth.get_current_user') as mock_get_user:
+        mock_get_user.return_value = type('User', (), {
+            'id': 1,
+            'email': 'owner@example.com',
+            'name': 'Test Owner',
+            'role': 'user'
+        })()
+        yield
+
+@pytest.fixture(scope="function")
+def auth_token():
+    return "fake-token"
 
 @pytest.fixture(scope="function")
 def test_user():
-    """Фикстура с данными тестового пользователя"""
     return {
         "id": 1,
         "email": "owner@example.com",
-        "name": "Test Owner"
+        "name": "Test Owner",
+        "role": "user"
     }
