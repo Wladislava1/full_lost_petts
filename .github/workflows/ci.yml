@@ -10,6 +10,16 @@ jobs:
   backend-tests:
     name: Backend Tests (FastAPI)
     runs-on: ubuntu-latest
+    services:
+        minio:
+            image: minio/minio:latest
+            env:
+                MINIO_ROOT_USER: minioadmin
+                MINIO_ROOT_PASSWORD: minioadmin
+            options: --health-cmd "curl -f http://localhost:9000/minio/health/live" --health-interval 10s
+            ports:
+                - 9000:9000
+        command: server /data
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
