@@ -59,7 +59,8 @@ jobs:
       - name: Run Pytest with Coverage
         run: |
           cd backend
-          PYTHONPATH=. pytest tests/ -v --cov=.
+          python -m pytest backend/tests/ -v --cov=backend
+          working-directory: ./
 
   frontend-tests:
     name: Frontend Tests (React)
