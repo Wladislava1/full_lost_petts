@@ -11,19 +11,20 @@ jobs:
     name: Backend Tests (FastAPI)
     runs-on: ubuntu-latest
     services:
-        minio:
-            image: minio/minio:latest
-            env:
-                MINIO_ROOT_USER: minioadmin
-                MINIO_ROOT_PASSWORD: minioadmin
-            options: --health-cmd "curl -f http://localhost:9000/minio/health/live" --health-interval 10s
-            ports:
-                - 9000:9000
+      minio:
+        image: minio/minio:latest
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports:
+          - 9000:9000
+        options: --health-cmd "curl -f http://localhost:9000/minio/health/live" --health-interval 10s --health-retries 5
         command: server /data
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -33,11 +34,32 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
+          pip install minio
+          
+      - name: Wait for MinIO
+        run: |
+          until curl -f http://localhost:9000/minio/health/live; do
+            echo "Waiting for MinIO..."
+            sleep 2
+          done
+          echo "MinIO is ready"
+          
+      - name: Create media bucket
+        run: |
+          python -c "
+          from minio import Minio
+          client = Minio('localhost:9000', access_key='minioadmin', secret_key='minioadmin', secure=False)
+          if not client.bucket_exists('media'):
+              client.make_bucket('media')
+              print('Bucket media created')
+          else:
+              print('Bucket media already exists')
+          "
           
       - name: Run Pytest with Coverage
         run: |
-            python -m pytest backend/tests/ -v --cov=backend
-            working-directory: ./
+          cd backend
+          PYTHONPATH=. pytest tests/ -v --cov=.
 
   frontend-tests:
     name: Frontend Tests (React)
