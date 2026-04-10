@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: pets_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pets_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pets_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app # <-- ДОБАВЛЕНО
+
+  backend:
+    build: ./backend
+    container_name: pets_backend
+    environment:
+      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_URL: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "False"
+      # Вернули +psycopg2, чтобы SQLAlchemy знал, какой драйвер использовать
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/pets_db
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - app
+
+  frontend:
+    build: ./frontend
+    container_name: pets_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  app:
+    driver: bridge

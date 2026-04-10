@@ -6,6 +6,8 @@ export const getImageUrl = (path?: string | null): string => {
   }
 
   if (path.startsWith('http')) return path;
+  
+  if (path.startsWith('/media/')) return path;
 
   return `${API_BASE_URL}${path}`;
 };

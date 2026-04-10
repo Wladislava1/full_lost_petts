@@ -6,7 +6,6 @@ import { useAuth } from '../hooks/useAuth';
 import bg2 from '../assets/bg2.jpg';
 import { FaUserCircle } from 'react-icons/fa';
 import { apiService } from '../services/api';
-// 1. Добавили импорт Helmet
 import { Helmet } from 'react-helmet-async';
 
 interface Announcement {
@@ -20,7 +19,6 @@ interface Announcement {
   contact_info?: string[];
   created_at: string;
   user_id: number;
-  // 2. Добавили координаты, чтобы TypeScript их пропускал
   latitude?: number | null;
   longitude?: number | null;
 }
@@ -50,6 +48,8 @@ const HomePage = () => {
       if (search) filters.animal_name = search; 
 
       const data = await apiService.getAnnouncements(filters);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log('Announcements data:', data.map((ad: any) => ({ id: ad.id, image: ad.image })));
       setAnnouncements(data);
     } catch (error) {
       console.error('Error loading announcements:', error);

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = '/api';
 
 class ApiService {
   private getAuthHeader(): Record<string, string> {

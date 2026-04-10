@@ -44,7 +44,7 @@ class S3Storage:
     async def upload_file(self, file: UploadFile, user_id: int) -> str:
         try:
             file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
-            filename = f"{user_id}/{uuid.uuid4()}.{file_extension}"
+            filename = f"{uuid.uuid4()}.{file_extension}"
             
             file_content = await file.read()
             file_data = io.BytesIO(file_content)
@@ -57,7 +57,7 @@ class S3Storage:
                 content_type=file.content_type
             )
             
-            return f"http://{self.minio_url}/{self.bucket_name}/{filename}"
+            return f"/media/{filename}"
             
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
