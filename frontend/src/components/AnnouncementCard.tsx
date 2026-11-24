@@ -1,4 +1,4 @@
-import { getImageUrl } from '../hooks/url';
+import { getImageUrl, markImageFallback } from '../hooks/url';
 import { useAuth } from '../hooks/useAuth';
 
 interface AnnouncementCardProps {
@@ -54,9 +54,7 @@ function AnnouncementCard({
           src={imageUrl}
           alt={title}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src = '/default-image.jpg';
-          }}
+          onError={(e) => markImageFallback(e.currentTarget)}
         />
       </div>
 

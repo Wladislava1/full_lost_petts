@@ -3,7 +3,7 @@ import { FaVk, FaTelegramPlane, FaWhatsapp } from "react-icons/fa";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import type { Contact } from '../types/index';
-import { getImageUrl } from '../hooks/url';
+import { getImageUrl, markImageFallback } from '../hooks/url';
 import { useAuth } from '../hooks/useAuth';
 import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 
@@ -116,9 +116,7 @@ export default function AnnouncementModal({
               src={imageUrl}
               alt={announcement.title}
               className="w-full h-full object-cover rounded"
-              onError={(e) => {
-                e.currentTarget.src = '/default-image.jpg';
-              }}
+              onError={(e) => markImageFallback(e.currentTarget)}
             />
           </div>
 

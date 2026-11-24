@@ -18,10 +18,19 @@ class User(Base):
     city = Column(String, nullable=True, default=None)
     contacts = Column(JSON, nullable=True, default=None)
     avatar_url = Column(String, nullable=True)
+    svyaz_id = Column(String, unique=True, nullable=True, index=True)
     
     role = Column(Enum(Role), default=Role.user, nullable=False)
     
     ads = relationship("Ad", back_populates="owner")
+
+class HandoffCode(Base):
+    __tablename__ = "svyaz_handoff_codes"
+
+    code = Column(String, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
 
 class Ad(Base):
     __tablename__ = "ads"

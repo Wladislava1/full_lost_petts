@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import SvyazEntryPage from './pages/SvyazEntryPage';
 import CreateAnnouncementPage from './pages/CreateAnnouncementPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -21,6 +22,7 @@ const App = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/svyaz" element={<SvyazEntryPage />} />
         
         {/* Защищенный роут только для администратора */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>

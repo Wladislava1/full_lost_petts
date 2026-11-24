@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from backend.database import engine, Base, SessionLocal
-from backend.routes import announcements, auth, user, admin
+from backend.routes import announcements, auth, user, admin, svyaz
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -31,6 +31,23 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+
+
+def ensure_svyaz_id_column():
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "svyaz_id" in columns:
+        return
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN svyaz_id VARCHAR"))
+        connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_svyaz_id ON users (svyaz_id)"))
+
+
+ensure_svyaz_id_column()
 os.makedirs("media", exist_ok=True)
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
@@ -88,5 +105,6 @@ def custom_openapi():
 app.include_router(admin.router)
 app.include_router(announcements.router)
 app.include_router(auth.router)
+app.include_router(svyaz.router)
 app.include_router(user.router)
 app.openapi = custom_openapi
